@@ -22,10 +22,10 @@ class UsedNonceAdmin(admin.ModelAdmin):
 
 @admin.register(Transaction)
 class TransactionAdmin(admin.ModelAdmin):
-    list_display = ['tx_hash', 'from_address', 'to_address', 'amount_eth', 'status', 'created_at']
+    list_display = ['tx_hash', 'from_address', 'to_address', 'amount_eth', 'status', 'broadcasted', 'created_at']
     search_fields = ['tx_hash', 'from_address', 'to_address']
-    readonly_fields = ['tx_hash', 'from_address', 'to_address', 'amount_eth', 'status', 'error_message', 'created_at']
-    list_filter = ['status', 'created_at']
+    readonly_fields = ['tx_hash', 'from_address', 'to_address', 'amount_eth', 'status', 'error_message', 'broadcasted', 'created_at']
+    list_filter = ['status', 'broadcasted', 'created_at']
     
     def has_add_permission(self, request):
         return False

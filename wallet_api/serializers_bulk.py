@@ -10,6 +10,11 @@ class BulkSendSerializer(serializers.Serializer):
         decimal_places=18,
         help_text="Amount in ETH to send to EACH wallet"
     )
+    send_tx = serializers.IntegerField(
+        required=False,
+        default=0,
+        help_text="1 to broadcast transactions, 0 to only sign"
+    )
     
     def validate_eth_wallets(self, value):
         addresses = [addr.strip() for addr in value.split(',')]

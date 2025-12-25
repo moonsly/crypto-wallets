@@ -57,6 +57,7 @@ class Transaction(models.Model):
     amount_eth = models.DecimalField(max_digits=32, decimal_places=18)
     status = models.CharField(max_length=10, choices=STATUS_CHOICES)
     error_message = models.TextField(blank=True, null=True)
+    broadcasted = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     
     class Meta:

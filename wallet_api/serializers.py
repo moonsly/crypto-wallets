@@ -30,6 +30,11 @@ class SignTransactionSerializer(serializers.Serializer):
         decimal_places=18,
         help_text="Amount in ETH"
     )
+    send_tx = serializers.IntegerField(
+        required=False,
+        default=0,
+        help_text="1 to broadcast transaction to network, 0 to only sign"
+    )
     
     def validate_address(self, value):
         if not value.startswith('0x') or len(value) != 42:
@@ -42,8 +47,8 @@ class SignTransactionSerializer(serializers.Serializer):
         return value
     
     def validate_amount(self, value):
-        if value <= 0:
-            raise serializers.ValidationError("Amount must be greater than 0")
+        if value < 0:
+            raise serializers.ValidationError("Amount cannot be negative")
         return value
 
 

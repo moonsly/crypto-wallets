@@ -20,6 +20,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'drf_spectacular',
     'corsheaders',
     'wallet_api',
 ]
@@ -90,6 +91,14 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [],
     'DEFAULT_PERMISSION_CLASSES': [],
     'UNAUTHENTICATED_USER': None,
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+}
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Crypto Wallet API',
+    'DESCRIPTION': 'ETH wallet service with MPC (3 nodes) architecture',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
 }
 
 CORS_ALLOW_ALL_ORIGINS = True
@@ -106,3 +115,6 @@ REQUEST_EXPIRY_SECONDS = int(os.getenv('REQUEST_EXPIRY_SECONDS', '300'))
 
 # Требовать подпись запросов (timestamp + nonce + signature)
 REQUIRE_REQUEST_SIGNATURE = os.getenv('REQUIRE_REQUEST_SIGNATURE', 'False').lower() in ('true', '1', 'yes')
+
+# Ключ для шифрования шардов
+SHARD_ENCRYPTION_KEY = os.getenv('SHARD_ENCRYPTION_KEY', '')

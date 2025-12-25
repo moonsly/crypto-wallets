@@ -9,7 +9,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Настройка SSH
-RUN mkdir /var/run/sshd
+RUN mkdir -p /var/run/sshd
 RUN useradd -m -s /bin/bash mpcadmin && \
     echo "mpcadmin ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 

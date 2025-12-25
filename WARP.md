@@ -102,7 +102,24 @@
 - `wallet_api/models.py` - модель UsedNonce с cleanup_old_nonces()
 - `.env.example` - REQUIRE_REQUEST_SIGNATURE, REQUEST_EXPIRY_SECONDS
 
-### 5. API эндпоинты
+### 5. Шифрование шардов
+**Проблема:** Шарды хранятся на MPC нодах в открытом виде в памяти.
+
+**Решение:**
+- Каждая нода шифрует свой шард при запуске используя AES-256-CFB
+- Ключ: SHA256(SHARD_ENCRYPTION_KEY)
+- IV: 16 случайных байт (новый для каждого шарда)
+- Открытый текст удаляется из памяти через `del NODE_SHARD`
+- API расшифровывает шарды при получении
+
+**Файлы:**
+- `mpc-node/app.py` - функции `encrypt_shard()`, шифрование при старте
+- `wallet_api/mpc_client.py` - метод `decrypt_shard()` в MPCClient
+- `mpc-node/requirements.txt` - добавлена cryptography
+- `.env.example` - SHARD_ENCRYPTION_KEY
+- `docker-compose.yml` - SHARD_ENCRYPTION_KEY передается всем нодам
+
+### 6. API эндпоинты
 
 #### POST /api/wallet/create
 Создает новый ETH кошелек через HD деривацию, запрашивая шарды у всех 3 нод.
@@ -123,7 +140,7 @@
 - `wallet_api/views.py` - все view классы
 - `wallet_api/serializers_bulk.py` - сериализаторы для bulk-send
 
-### 6. Конфигурация через .env
+### 7. Конфигурация через .env
 
 ```env
 API_SECRET_KEY=your_secret_key_here
@@ -134,6 +151,9 @@ REQUIRE_REQUEST_SIGNATURE=False
 
 # Мастер мнемоник - автоматически делится на шарды
 MASTER_SEED=abandon abandon abandon ... (24 words)
+
+# Ключ для шифрования шардов на MPC нодах
+SHARD_ENCRYPTION_KEY=your_encryption_key_here
 
 # SSH пароли для каждой ноды
 MPC_NODE_1_SSH_PASSWORD=pass1

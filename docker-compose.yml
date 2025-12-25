@@ -9,9 +9,12 @@ services:
     environment:
       - NODE_ID=1
       - NODE_PORT=8001
-      - PEER_NODES=http://mpc-node-2:8002,http://mpc-node-3:8003
+      - NODE_SHARD=${MPC_NODE_1_SHARD}
+      - SHARD_ENCRYPTION_KEY=${SHARD_ENCRYPTION_KEY}
+      - SSH_PASSWORD=${MPC_NODE_1_SSH_PASSWORD}
     ports:
       - "8001:8001"
+      - "2221:22"
     networks:
       - mpc-network
     volumes:
@@ -27,7 +30,7 @@ services:
       - NODE_PORT=8002
       - SSH_PASSWORD=${MPC_NODE_2_SSH_PASSWORD}
       - NODE_SHARD=${MPC_NODE_2_SHARD}
-      - PEER_NODES=http://mpc-node-1:8001,http://mpc-node-3:8003
+      - SHARD_ENCRYPTION_KEY=${SHARD_ENCRYPTION_KEY}
     ports:
       - "8002:8002"
       - "2222:22"
@@ -46,7 +49,7 @@ services:
       - NODE_PORT=8003
       - SSH_PASSWORD=${MPC_NODE_3_SSH_PASSWORD}
       - NODE_SHARD=${MPC_NODE_3_SHARD}
-      - PEER_NODES=http://mpc-node-1:8001,http://mpc-node-2:8002
+      - SHARD_ENCRYPTION_KEY=${SHARD_ENCRYPTION_KEY}
     ports:
       - "8003:8003"
       - "2223:22"
