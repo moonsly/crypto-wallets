@@ -99,6 +99,17 @@ SPECTACULAR_SETTINGS = {
     'DESCRIPTION': 'ETH wallet service with MPC (3 nodes) architecture',
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False,
+    'SECURITY': [{'ApiKeyAuth': []}],
+    'APPEND_COMPONENTS': {
+        'securitySchemes': {
+            'ApiKeyAuth': {
+                'type': 'apiKey',
+                'in': 'header',
+                'name': 'X-API-Key',
+                'description': 'API Key for authentication'
+            }
+        }
+    },
 }
 
 CORS_ALLOW_ALL_ORIGINS = True
