@@ -279,6 +279,73 @@ class TransactionListView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+class HealthView(APIView):
+    """
+    GET /api/health
+
+    Проверка состояния сервиса: БД и все 3 MPC ноды
+    """
+    authentication_classes = []
+
+    @extend_schema(
+        responses={
+            200: {
+                'type': 'object',
+                'properties': {
+                    'status': {'type': 'string'},
+                    'database': {'type': 'string'},
+                    'mpc_nodes': {'type': 'object'}
+                }
+            }
+        },
+        description="Health check: database and MPC nodes status (no auth required)"
+    )
+    def get(self, request):
+        from django.db import connection
+        import requests
+
+        health = {
+            'status': 'healthy',
+            'database': 'unknown',
+            'mpc_nodes': {}
+        }
+
+        # Check database
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute('SELECT 1')
+            health['database'] = 'ok'
+        except Exception as e:
+            health['database'] = f'error: {str(e)}'
+            health['status'] = 'unhealthy'
+
+        # Check MPC nodes
+        nodes = [
+            ('node1', settings.MPC_NODE_1_URL),
+            ('node2', settings.MPC_NODE_2_URL),
+            ('node3', settings.MPC_NODE_3_URL)
+        ]
+
+        for node_name, node_url in nodes:
+            try:
+                resp = requests.get(f'{node_url}/health', timeout=2)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    health['mpc_nodes'][node_name] = {
+                        'status': 'ok',
+                        'has_shard': data.get('has_shard', False)
+                    }
+                else:
+                    health['mpc_nodes'][node_name] = {'status': f'error: HTTP {resp.status_code}'}
+                    health['status'] = 'unhealthy'
+            except Exception as e:
+                health['mpc_nodes'][node_name] = {'status': f'error: {str(e)}'}
+                health['status'] = 'unhealthy'
+
+        status_code = status.HTTP_200_OK if health['status'] == 'healthy' else status.HTTP_503_SERVICE_UNAVAILABLE
+        return Response(health, status=status_code)
+
+
 class ConfigView(APIView):
     """
     GET /api/config
