@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  mpc-node-1:
+    build:
+      context: ./mpc-node
+      dockerfile: Dockerfile
+    container_name: mpc-node-1
+    environment:
+      - NODE_ID=1
+      - NODE_PORT=8001
+      - PEER_NODES=http://mpc-node-2:8002,http://mpc-node-3:8003
+    ports:
+      - "8001:8001"
+    networks:
+      - mpc-network
+    volumes:
+      - ./data/node1:/app/data
+
+  mpc-node-2:
+    build:
+      context: ./mpc-node
+      dockerfile: Dockerfile
+    container_name: mpc-node-2
+    environment:
+      - NODE_ID=2
+      - NODE_PORT=8002
+      - SSH_PASSWORD=${MPC_NODE_2_SSH_PASSWORD}
+      - NODE_SHARD=${MPC_NODE_2_SHARD}
+      - PEER_NODES=http://mpc-node-1:8001,http://mpc-node-3:8003
+    ports:
+      - "8002:8002"
+      - "2222:22"
+    networks:
+      - mpc-network
+    volumes:
+      - ./data/node2:/app/data
+
+  mpc-node-3:
+    build:
+      context: ./mpc-node
+      dockerfile: Dockerfile
+    container_name: mpc-node-3
+    environment:
+      - NODE_ID=3
+      - NODE_PORT=8003
+      - SSH_PASSWORD=${MPC_NODE_3_SSH_PASSWORD}
+      - NODE_SHARD=${MPC_NODE_3_SHARD}
+      - PEER_NODES=http://mpc-node-1:8001,http://mpc-node-2:8002
+    ports:
+      - "8003:8003"
+      - "2223:22"
+    networks:
+      - mpc-network
+    volumes:
+      - ./data/node3:/app/data
+
+networks:
+  mpc-network:
+    driver: bridge
