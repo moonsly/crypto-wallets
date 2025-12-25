@@ -8,6 +8,9 @@ class WalletAdmin(admin.ModelAdmin):
     search_fields = ['address']
     readonly_fields = ['address', 'hd_path', 'created_at']
 
+    def has_add_permission(self, request):
+        return False
+
 
 @admin.register(UsedNonce)
 class UsedNonceAdmin(admin.ModelAdmin):
@@ -15,7 +18,7 @@ class UsedNonceAdmin(admin.ModelAdmin):
     search_fields = ['nonce']
     readonly_fields = ['nonce', 'timestamp', 'created_at']
     list_filter = ['created_at']
-    
+
     def has_add_permission(self, request):
         return False
 
@@ -26,6 +29,6 @@ class TransactionAdmin(admin.ModelAdmin):
     search_fields = ['tx_hash', 'from_address', 'to_address']
     readonly_fields = ['tx_hash', 'from_address', 'to_address', 'amount_eth', 'status', 'error_message', 'broadcasted', 'created_at']
     list_filter = ['status', 'broadcasted', 'created_at']
-    
+
     def has_add_permission(self, request):
         return False

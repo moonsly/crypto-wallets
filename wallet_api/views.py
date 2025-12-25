@@ -97,12 +97,20 @@ class SignTransactionView(APIView):
         amount = serializer.validated_data['amount']
         send_tx = serializer.validated_data.get('send_tx', 0)
 
+        # Whitelist check: from wallet must exist in DB
         try:
             wallet = Wallet.objects.get(address=address)
         except Wallet.DoesNotExist:
             return Response(
-                {'error': 'Wallet not found'},
-                status=status.HTTP_404_NOT_FOUND
+                {'error': f'Wallet {address} not in whitelist. Create wallet first via /api/wallet/create'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        # Whitelist check: to wallet must exist in DB
+        if not Wallet.objects.filter(address=to_address).exists():
+            return Response(
+                {'error': f'Recipient wallet {to_address} not in whitelist. Create wallet first via /api/wallet/create'},
+                status=status.HTTP_403_FORBIDDEN
             )
 
         try:
@@ -364,6 +372,21 @@ class BulkSendView(APIView):
             mpc_client = MPCClient()
             master_wallet_data = mpc_client.generate_wallet(master_hd_path)
             master_address = master_wallet_data['address']
+
+            # Whitelist check: master wallet must exist
+            if not Wallet.objects.filter(address=master_address).exists():
+                return Response(
+                    {'error': f'Master wallet {master_address} not in whitelist. Create it first via /api/wallet/create with hd_path={master_hd_path}'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+
+            # Whitelist check: all recipient wallets must exist
+            for recipient in recipient_addresses:
+                if not Wallet.objects.filter(address=recipient).exists():
+                    return Response(
+                        {'error': f'Recipient wallet {recipient} not in whitelist. Create all recipient wallets first via /api/wallet/create'},
+                        status=status.HTTP_403_FORBIDDEN
+                    )
 
             # Проверяем баланс мастер кошелька
             master_balance_wei = w3.eth.get_balance(master_address)
