@@ -35,17 +35,17 @@ class SignTransactionSerializer(serializers.Serializer):
         default=0,
         help_text="1 to broadcast transaction to network, 0 to only sign"
     )
-    
+
     def validate_address(self, value):
         if not value.startswith('0x') or len(value) != 42:
             raise serializers.ValidationError("Invalid Ethereum address format")
         return value
-    
+
     def validate_to(self, value):
         if not value.startswith('0x') or len(value) != 42:
             raise serializers.ValidationError("Invalid Ethereum address format")
         return value
-    
+
     def validate_amount(self, value):
         if value < 0:
             raise serializers.ValidationError("Amount cannot be negative")
@@ -56,3 +56,14 @@ class SignTransactionResponseSerializer(serializers.Serializer):
     signature = serializers.CharField()
     tx_hash = serializers.CharField(required=False)
     raw_transaction = serializers.CharField(required=False)
+
+
+class TransactionSerializer(serializers.Serializer):
+    tx_hash = serializers.CharField()
+    from_address = serializers.CharField()
+    to_address = serializers.CharField()
+    amount_eth = serializers.DecimalField(max_digits=32, decimal_places=18)
+    status = serializers.CharField()
+    error_message = serializers.CharField(required=False, allow_null=True)
+    broadcasted = serializers.BooleanField()
+    created_at = serializers.DateTimeField()
