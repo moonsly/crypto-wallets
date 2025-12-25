@@ -173,6 +173,95 @@ MPC_NODE_2_SHARD="word9 word10 ... word16"
 MPC_NODE_3_SHARD="word17 word18 ... word24"
 ```
 
+### 8. Упрощение MPC нод и перенос логики в API
+**Проблема:** MPC ноды делали слишком много - деривацию кошельков, подпись транзакций, знали друг о друге (PEER_NODES).
+
+**Решение:**
+- Упростили ноды до 2 эндпоинтов: `/health` и `/get_shard`
+- Удалили `/generate` и `/sign` с нод
+- Удалили PEER_NODES - ноды не знают друг о друге
+- Убрали зависимости: web3, eth-account, hdwallet, mnemonic, requests
+- Оставили только: flask, cryptography
+
+**Вся логика перенесена в API:**
+- `mpc_client.py::generate_wallet()` - получает шарды, собирает мнемоник, делает деривацию
+- `mpc_client.py::sign_transaction()` - получает шарды, восстанавливает private key, подписывает raw tx
+
+**Файлы:**
+- `mpc-node/app.py` - упрощен до 36 строк
+- `mpc-node/requirements.txt` - только flask + cryptography
+- `wallet_api/mpc_client.py` - добавлены методы derive_wallet(), combine_shards()
+- `docker-compose.yml` - убран PEER_NODES
+
+### 9. Параметр send_tx для отправки транзакций
+**Проблема:** Транзакции только подписывались, но не отправлялись в сеть. Нужна возможность как отправлять, так и только подписывать (для отправки из другого сервиса).
+
+**Решение:**
+- Добавлен параметр `send_tx` в `/api/wallet/sign` и `/api/wallet/bulk-send`
+- `send_tx=0` (по умолчанию) - только подпись, возврат raw tx
+- `send_tx=1` - подпись + отправка через `w3.eth.send_raw_transaction()`
+- Логирование каждой отправки
+
+**Файлы:**
+- `wallet_api/serializers.py` - добавлен send_tx в SignTransactionSerializer
+- `wallet_api/serializers_bulk.py` - добавлен send_tx в BulkSendSerializer
+- `wallet_api/mpc_client.py` - sign_transaction() теперь возвращает raw_transaction + tx_hash
+- `wallet_api/views.py` - добавлена логика отправки в SignTransactionView и BulkSendView
+
+### 10. Модель Transaction и логирование
+**Добавлена модель `Transaction` для хранения всех проведенных транзакций:**
+- `tx_hash` - хеш транзакции
+- `from_address` / `to_address` - отправитель/получатель
+- `amount_eth` - сумма
+- `status` - ok/error
+- `error_message` - текст ошибки
+- `broadcasted` - была ли отправлена в сеть (send_tx=1)
+- `created_at` - время создания
+
+**Логирование:**
+- Каждая транзакция сохраняется в БД
+- Логи в консоли для bulk-send: "Bulk-send [1/4]: 0x... -> 0x..., amount: 0.001 ETH"
+- Добавлена в админку Django
+
+**Файлы:**
+- `wallet_api/models.py` - модель Transaction
+- `wallet_api/admin.py` - TransactionAdmin
+- `wallet_api/views.py` - сохранение после каждой транзакции
+- Миграции: `0002_transaction.py`, `0003_transaction_broadcasted.py`
+
+### 11. GET /api/transactions - просмотр транзакций
+**Добавлен эндпоинт для просмотра всех транзакций:**
+- Без параметров: все транзакции
+- `?wallet=0x...` - фильтр по кошельку (в from_address ИЛИ to_address)
+- Авторизация: X-API-Key
+
+**Файлы:**
+- `wallet_api/serializers.py` - TransactionSerializer
+- `wallet_api/views.py` - TransactionListView
+- `wallet_api/urls.py` - роут transactions
+
+### 12. Swagger UI с авторизацией
+**Добавлена интеграция drf-spectacular для Swagger UI:**
+- Доступен на `/api/docs/`
+- Кнопка "Authorize" для ввода X-API-Key
+- Аннотации `@extend_schema` для всех эндпоинтов
+
+**Файлы:**
+- `requirements.txt` - drf-spectacular==0.27.0
+- `crypto_wallet_service/settings.py` - SPECTACULAR_SETTINGS с ApiKeyAuth
+- `crypto_wallet_service/urls.py` - роуты /api/schema/ и /api/docs/
+- `wallet_api/views.py` - аннотации на всех views
+
+### 13. Параметр amount=0 для максимальной суммы
+**Добавлена логика для /api/wallet/sign:**
+- Если `amount=0` - автоматически рассчитывается максимальная сумма
+- Формула: `balance - gas_cost`
+- Проверка что баланса хватает на газ
+
+**Файлы:**
+- `wallet_api/serializers.py` - validate_amount разрешает 0
+- `wallet_api/views.py` - логика расчета в SignTransactionView
+
 ## Workflow запуска
 
 1. Установить зависимости:

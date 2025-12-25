@@ -81,7 +81,8 @@ class SignTransactionView(APIView):
                 value={
                     'address': '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb',
                     'to': '0x8626f6940E2eb28930eFb4CeF49B2d1F2C9C1199',
-                    'amount': '0.01'
+                    'amount': '0.01',
+                    'send_tx': 1
                 },
             ),
         ]
@@ -326,7 +327,8 @@ class BulkSendView(APIView):
     @extend_schema(
         request={'application/json': {'type': 'object', 'properties': {
             'eth_wallets': {'type': 'string', 'description': 'Comma-separated addresses'},
-            'amount': {'type': 'string', 'description': 'ETH amount per wallet'}
+            'amount': {'type': 'string', 'description': 'ETH amount per wallet'},
+            'send_tx': {'type': 'integer', 'description': 'if 1 - broadcasts TXN'}
         }}},
         responses={200: {'type': 'object'}},
         description="Bulk send ETH from master wallet to multiple addresses"
