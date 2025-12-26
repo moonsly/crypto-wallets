@@ -1,0 +1,297 @@
+openapi: 3.0.3
+info:
+  title: Crypto Wallet API
+  version: 1.0.0
+  description: ETH wallet service with MPC (3 nodes) architecture
+paths:
+  /api/config:
+    get:
+      operationId: config_retrieve
+      description: Get service configuration (no auth required)
+      tags:
+      - config
+      security:
+      - ApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  django_version:
+                    type: string
+                  python_version:
+                    type: string
+                  debug:
+                    type: boolean
+                  infura_network:
+                    type: string
+                  require_signature:
+                    type: boolean
+                  request_expiry_seconds:
+                    type: integer
+                  mpc_nodes:
+                    type: array
+                    items:
+                      type: string
+          description: ''
+  /api/health:
+    get:
+      operationId: health_retrieve
+      description: 'Health check: database and MPC nodes status (no auth required)'
+      tags:
+      - health
+      security:
+      - ApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  database:
+                    type: string
+                  mpc_nodes:
+                    type: object
+          description: ''
+  /api/transactions:
+    get:
+      operationId: transactions_list
+      description: List all transactions, optionally filtered by wallet address
+      parameters:
+      - in: query
+        name: wallet
+        schema:
+          type: string
+        description: Filter by wallet address (from OR to)
+      tags:
+      - transactions
+      security:
+      - ApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Transaction'
+          description: ''
+  /api/wallet/bulk-send:
+    post:
+      operationId: wallet_bulk_send_create
+      description: Bulk send ETH from master wallet to multiple addresses
+      tags:
+      - wallet
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                eth_wallets:
+                  type: string
+                  description: Comma-separated addresses
+                amount:
+                  type: string
+                  description: ETH amount per wallet
+                send_tx:
+                  type: integer
+                  description: if 1 - broadcasts TXN
+      security:
+      - ApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+          description: ''
+  /api/wallet/create:
+    post:
+      operationId: wallet_create_create
+      description: Create new ETH wallet using MPC nodes with HD derivation
+      tags:
+      - wallet
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateWallet'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CreateWallet'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CreateWallet'
+      security:
+      - ApiKeyAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Wallet'
+          description: ''
+  /api/wallet/sign:
+    post:
+      operationId: wallet_sign_create
+      description: Sign and send ETH transaction. Set amount=0 to send max balance
+        minus gas.
+      tags:
+      - wallet
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignTransaction'
+            examples:
+              ExampleRequest:
+                value:
+                  address: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb'
+                  to: '0x8626f6940E2eb28930eFb4CeF49B2d1F2C9C1199'
+                  amount: '0.01'
+                  send_tx: 1
+                summary: Example request
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SignTransaction'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SignTransaction'
+        required: true
+      security:
+      - ApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SignTransactionResponse'
+              examples:
+                ExampleRequest:
+                  value:
+                    address: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb'
+                    to: '0x8626f6940E2eb28930eFb4CeF49B2d1F2C9C1199'
+                    amount: '0.01'
+                    send_tx: 1
+                  summary: Example request
+          description: ''
+  /api/wallets:
+    get:
+      operationId: wallets_list
+      description: List all created wallets
+      tags:
+      - wallets
+      security:
+      - ApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Wallet'
+          description: ''
+components:
+  schemas:
+    CreateWallet:
+      type: object
+      properties:
+        hd_path:
+          type: string
+          description: HD derivation path (optional, auto-generated if not provided)
+    SignTransaction:
+      type: object
+      properties:
+        address:
+          type: string
+          description: Wallet address to sign from
+          maxLength: 42
+        to:
+          type: string
+          description: Recipient address
+          maxLength: 42
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,2}(?:\.\d{0,18})?$
+          description: Amount in ETH
+        send_tx:
+          type: integer
+          default: 0
+          description: 1 to broadcast transaction to network, 0 to only sign
+      required:
+      - address
+      - amount
+      - to
+    SignTransactionResponse:
+      type: object
+      properties:
+        signature:
+          type: string
+        tx_hash:
+          type: string
+        raw_transaction:
+          type: string
+      required:
+      - signature
+    Transaction:
+      type: object
+      properties:
+        tx_hash:
+          type: string
+        from_address:
+          type: string
+        to_address:
+          type: string
+        amount_eth:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,14}(?:\.\d{0,18})?$
+        status:
+          type: string
+        error_message:
+          type: string
+          nullable: true
+        broadcasted:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+      required:
+      - amount_eth
+      - broadcasted
+      - created_at
+      - from_address
+      - status
+      - to_address
+      - tx_hash
+    Wallet:
+      type: object
+      properties:
+        address:
+          type: string
+          readOnly: true
+        hd_path:
+          type: string
+          maxLength: 100
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - address
+      - created_at
+      - hd_path
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: API Key for authentication
