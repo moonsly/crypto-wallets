@@ -74,6 +74,8 @@ python manage.py runserver 8000
 
 ## API Документация
 
+Swagger для API - [CryptoWallet.yaml](CryptoWallet.yaml) 
+
 ### Аутентификация
 
 Все запросы требуют заголовок `X-API-Key` с SHA256 хешем вашего API ключа:
